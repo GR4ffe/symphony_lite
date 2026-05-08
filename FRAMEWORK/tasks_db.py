@@ -1,6 +1,6 @@
 """
 Symphony-Lite 任务数据库
-/workspace/symphony/tasks_db.py
+FRAMEWORK/tasks_db.py
 
 读写 tasks.json，提供类型化查询接口。
 所有写操作直接落盘，保证 Hermes 重启后能对账。

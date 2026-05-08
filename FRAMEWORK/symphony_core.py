@@ -1,6 +1,6 @@
 """
 Symphony-Lite 核心编排器
-/workspace/symphony/symphony_core.py
+FRAMEWORK/symphony_core.py
 
 职责:
 - 维护内存状态(running / claimed / retry_attempts)
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from config_loader import Config
     from tasks_db import Task, TasksDB
     from workspace_mgr import Workspace, WorkspaceManager
-    from agent_adapter import AgentResult, OpenCodeAgent, Session
+    from agent_types import AgentResult, Session
     from memory_manager import MemoryManager
     from notifier import Notifier
     from file_watcher import FileWatcher
@@ -159,20 +159,34 @@ class SymphonyOrchestrator:
         # 延迟导入子组件(避免循环依赖)
         from .tasks_db import TasksDB
         from .workspace_mgr import WorkspaceManager
-        from .agent_adapter import OpenCodeAgent
+        from .agent_types import AgentAdapter
         from .memory_manager import MemoryManager
         from .notifier import Notifier
         from .file_watcher import FileWatcher
 
         self.tasks_db = TasksDB(self.config.tracker.tasks_file)
         self.workspace_mgr = WorkspaceManager(self.config)
-        self.agent_adapter = OpenCodeAgent(self.config)
+
+        # 动态解析 Agent 适配器（config.agent.executor 决定用哪个）
+        import importlib
+        executor = self.config.agent.executor
+        if executor == "opencode":
+            # OpenCode 适配器在 EXAMPLES/opencode_centric/ 中
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "EXAMPLES", "opencode_centric"))
+            agent_module = importlib.import_module("agent_adapter")
+            AgentImplClass = getattr(agent_module, "OpenCodeAgent")
+        else:
+            # 自定义适配器：假设它可在当前 PYTHONPATH 下被 import
+            agent_module = importlib.import_module(f"{executor}_adapter")
+            AgentImplClass = getattr(agent_module, f"{executor.capitalize()}Agent")
+        self.agent_adapter = AgentImplClass(self.config)
+
         self.memory_mgr = MemoryManager(self.config)
 
         # 初始化通知器
         self.notifier = Notifier(self.config)
-        self.notifier.on_approved(self._on_graffe_approved)
-        self.notifier.on_revision(self._on_graffe_revision)
+        self.notifier.on_approved(self._on_task_approved)
+        self.notifier.on_revision(self._on_task_revision)
         self.notifier.start_listening(self.tasks_db)
 
         # 初始化文件监视器(监控 tasks.json 变化)
@@ -991,11 +1005,11 @@ class SymphonyOrchestrator:
                 else:
                     self.claimed.discard(task_id)
 
-    # ── GRaffe 审批回调 ────────────────────────────────────────────────────
+    # ── 任务审批回调 ────────────────────────────────────────────────────
 
-    def _on_graffe_approved(self, task: "Task") -> None:
+    def _on_task_approved(self, task: "Task") -> None:
         """
-        GRaffe 审批通过回调(Pending Review -> Done):
+        审批通过回调(Pending Review -> Done):
         - Phase 2: 把 workspace 中的 external_files 写回 original 路径
         - 清理工作区(before_remove 钩子)
         - 通知结束
@@ -1014,7 +1028,7 @@ class SymphonyOrchestrator:
         )
 
         log.info(
-            event="graffe_approved",
+            event="task_approved",
             detail=f"GRaffe approved {task.id}, deployed sandboxed files and cleaning up workspace",
             task_id=task.id,
         )
@@ -1022,7 +1036,7 @@ class SymphonyOrchestrator:
         # 从 pending_review_ack 中移除
         self._pending_review_ack.discard(task.id)
 
-    def _on_graffe_revision(self, task: "Task", error: str) -> None:
+    def _on_task_revision(self, task: "Task", error: str) -> None:
         """
         GRaffe 打回重做回调(Pending Review -> Todo):
         - 累加 attempt_count
@@ -1035,7 +1049,7 @@ class SymphonyOrchestrator:
 
         new_attempt = task_obj.attempt_count + 1
         log.info(
-            event="graffe_revision",
+            event="task_revision",
             detail=f"GRaffe requested revision for {task.id} (attempt {task_obj.attempt_count} -> {new_attempt}): {error}",
             task_id=task.id,
         )

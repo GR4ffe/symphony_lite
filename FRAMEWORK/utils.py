@@ -1,6 +1,6 @@
 """
 Symphony-Lite 工具函数
-/workspace/symphony/utils.py
+FRAMEWORK/utils.py
 """
 import re
 import os

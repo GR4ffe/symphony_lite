@@ -1,0 +1,15 @@
+# Symphony-Lite runtime dependencies
+pyyaml>=6.0          # Config file loading
+# inotify (optional — fallback to polling when unavailable)
+# pip install inotify
+
+# For OpenCode example (opencode_centric):
+# pip install opencode  # or install via npm
+# See https://github.com/opencode-ai/opencode
+
+# For Claude Code example (claude_code_centric):
+# pip install anthropic
+# See https://docs.anthropic.com/claude-code
+
+# For testing:
+# pip install pytest

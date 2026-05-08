@@ -1,6 +1,6 @@
 """
 Symphony-Lite 工作区管理器
-/workspace/symphony/workspace_mgr.py
+FRAMEWORK/workspace_mgr.py
 
 职责：
 - 创建/复用/删除工作区目录

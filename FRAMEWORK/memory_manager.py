@@ -1,6 +1,6 @@
 """
 Symphony-Lite 记忆管理器
-/workspace/symphony/memory_manager.py
+FRAMEWORK/memory_manager.py
 
 职责：
 - 任务完成后生成记忆记录（markdown，按 topic 归档）

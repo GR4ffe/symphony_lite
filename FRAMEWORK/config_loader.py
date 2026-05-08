@@ -1,8 +1,9 @@
 """
-Symphony-Lite 配置加载器
-/workspace/symphony/config_loader.py
+Symphony-Lite 配置加载
+FRAMEWORK/config_loader.py
 
-加载并验证 config.yaml，提供类型化 getter。
+提供从 YAML 文件加载配置、@dataclass 类型安全的配置结构。
+所有路径默认使用相对路径（相对于项目根目录），通过 YAML 覆盖。
 """
 import os
 import re
