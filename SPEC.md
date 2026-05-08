@@ -318,31 +318,13 @@ OpenCode is a reference implementation, not the only option. To swap in a differ
 
 ### 7.1 Implement the AgentAdapter Interface
 
+The shared types are defined in `FRAMEWORK/agent_types.py`. Your adapter should implement the interface defined there:
+
 ```python
-from dataclasses import dataclass
-from typing import Protocol
-
-@dataclass
-class Session:
-    id: str
-    pid: int
-    workspace: "Workspace"
-    process: "subprocess.Popen | None" = None
-
-@dataclass
-class AgentResult:
-    status: str          # "success" | "failed"
-    exit_code: int
-    stdout: str
-    stderr: str
-    result: dict
-
-class AgentAdapter(Protocol):
-    def start_session(self, workspace: "Workspace", prompt: str) -> Session: ...
-    def wait_session(self, session: Session) -> AgentResult: ...
-    def stop_session(self, session: Session) -> None: ...
-    def is_process_alive(self, pid: int) -> bool: ...
+from .agent_types import AgentAdapter, Session, AgentResult
 ```
+
+To see a complete implementation, refer to `EXAMPLES/opencode_centric/agent_adapter.py`.
 
 ### 7.2 Update config.yaml
 

@@ -316,31 +316,13 @@ OpenCode 是参考实现，不是唯一选项。换用不同 Agent 只需三步�
 
 ### 7.1 实现 AgentAdapter 接口
 
+所有共享类型都在 `FRAMEWORK/agent_types.py` 中定义。你的适配器应该实现那里定义的接口：
+
 ```python
-from dataclasses import dataclass
-from typing import Protocol
-
-@dataclass
-class Session:
-    id: str
-    pid: int
-    workspace: "Workspace"
-    process: "subprocess.Popen | None" = None
-
-@dataclass
-class AgentResult:
-    status: str
-    exit_code: int
-    stdout: str
-    stderr: str
-    result: dict
-
-class AgentAdapter(Protocol):
-    def start_session(self, workspace: "Workspace", prompt: str) -> Session: ...
-    def wait_session(self, session: Session) -> AgentResult: ...
-    def stop_session(self, session: Session) -> None: ...
-    def is_process_alive(self, pid: int) -> bool: ...
+from .agent_types import AgentAdapter, Session, AgentResult
 ```
+
+有关完整实现，请参考 `EXAMPLES/opencode_centric/agent_adapter.py`。
 
 ### 7.2 更新 config.yaml
 
