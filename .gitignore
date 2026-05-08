@@ -1,0 +1,32 @@
+# Symphony-Lite .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# Symphony data (local runtime state)
+symphony_data/
+*.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local configs with secrets (if you add them)
+# config.local.yaml
