@@ -38,6 +38,7 @@ class Notifier:
             "SILLACK_WEB_URL", "http://localhost:8001"
         )
         self.inbox_dir = getattr(config, "inbox_dir", None) or "./symphony_data/inbox"
+        os.makedirs(self.inbox_dir, exist_ok=True)
         self._listeners: list[Callable] = []
         self._running = False
         self._listener_thread: Thread | None = None
