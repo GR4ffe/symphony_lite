@@ -152,7 +152,8 @@ class OpenCodeAgent:
                 fi
                 if [ $(date +%s) -ge $_deadline ]; then
                     echo "[wrapper] DONE marker timeout, killing Python" >&2
-                    kill $PYTHON_PID 2>/dev/null || true
+                    kill -KILL --(-$$) $PYTHON_PID 2>/dev/null || kill -KILL $PYTHON_PID 2>/dev/null || true
+                    wait $PYTHON_PID 2>/dev/null || true
                     break
                 fi
                 sleep 2
@@ -161,6 +162,28 @@ class OpenCodeAgent:
             # 清理心跳守护
             kill $HEARTBEAT_PID 2>/dev/null || true
             wait $HEARTBEAT_PID 2>/dev/null || true
+
+            # ── 关键修复：.done 出现后，显式杀死 python PTY wrapper 及 opencode ──
+            # 否则 python 变成孤儿后卡在 select()，opencode 永远不退出
+            if kill -0 $PYTHON_PID 2>/dev/null; then
+                echo "[wrapper] DONE detected, killing PTY wrapper (pid $PYTHON_PID)" >&2
+                # 先 TERM 优雅退出（给 python 机会 close(masterFd) → PTY EOF → opencode 退出）
+                kill -TERM $PYTHON_PID 2>/dev/null || true
+                # 等 5s 优雅退出，超时则 KILL
+                for _ in $(seq 1 5); do
+                    if ! kill -0 $PYTHON_PID 2>/dev/null; then
+                        echo "[wrapper] PTY wrapper exited gracefully" >&2
+                        break
+                    fi
+                    sleep 1
+                done
+                # 仍活着？SIGKILL 整组
+                if kill -0 $PYTHON_PID 2>/dev/null; then
+                    echo "[wrapper] Force killing PTY wrapper and process group" >&2
+                    kill -KILL --(-$$) $PYTHON_PID 2>/dev/null || kill -KILL $PYTHON_PID 2>/dev/null || true
+                fi
+                wait $PYTHON_PID 2>/dev/null || true
+            fi
 
             # 补写序列号
             _raw=$(cat "$HEARTBEAT" 2>/dev/null)
