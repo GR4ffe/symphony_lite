@@ -1,6 +1,9 @@
 # Symphony-Lite
 
 [![CI](https://github.com/GR4ffe/symphony_lite/actions/workflows/test.yml/badge.svg)](https://github.com/GR4ffe/symphony_lite/actions/workflows/test.yml)
+[![coverage](https://img.shields.io/badge/coverage-62%25-yellow)](coverage/index.html)
+[![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 > A lightweight, state-driven framework for orchestrating multiple AI coding agents in coordinated workflows.
 
