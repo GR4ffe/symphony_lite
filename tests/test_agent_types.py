@@ -9,7 +9,7 @@ Covers:
 
 import pytest
 
-from FRAMEWORK.agent_types import Session, AgentResult, AgentAdapter
+from FRAMEWORK.agent_types import AgentAdapter, AgentResult, Session
 
 
 class TestSession:

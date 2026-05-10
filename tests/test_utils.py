@@ -9,20 +9,18 @@ Covers:
 - SecurityError
 """
 
-import os
 from pathlib import Path
 
 import pytest
 
 from FRAMEWORK.utils import (
-    sanitize_workspace_name,
+    SecurityError,
     enforce_workspace_invariant,
     get_hermes_home,
+    sanitize_workspace_name,
     symphony_root,
     workspace_root,
-    SecurityError,
 )
-
 
 # ── sanitize_workspace_name ─────────────────────────────────────
 

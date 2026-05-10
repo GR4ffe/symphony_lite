@@ -10,27 +10,20 @@ Covers:
 - All sub-config dataclasses default values
 """
 
-import os
 
 import pytest
 
 from FRAMEWORK.config_loader import (
+    AgentConfig,
     Config,
     ConfigError,
-    TrackerConfig,
-    PollingConfig,
-    WorkspaceConfig,
     HooksConfig,
-    OpenCodeConfig,
-    AgentConfig,
-    TimeoutsConfig,
-    MemoryConfig,
-    NotificationConfig,
-    SandboxConfig,
-    VerifyConfig,
     LoggingConfig,
+    OpenCodeConfig,
+    PollingConfig,
+    TrackerConfig,
+    WorkspaceConfig,
 )
-
 
 # ── Sub-config dataclass defaults ────────────────────────────────
 
