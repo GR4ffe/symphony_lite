@@ -7,13 +7,13 @@ FRAMEWORK/workspace_mgr.py
 - 执行钩子（after_create / before_run / after_run / before_remove）
 - 强制执行工作区隔离三不变量
 """
+import fcntl
 import os
 import re
 import shutil
 import subprocess
-import fcntl
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -183,7 +183,8 @@ class WorkspaceManager:
             if f.startswith("result.attempt_") or f.startswith("opencode.attempt_")
         ]
         if attempt_files:
-            print(f"[WorkspaceManager] {task_id} has {len(attempt_files)} archived attempts, keeping workspace for audit")
+            print(f"[WorkspaceManager] {task_id} has {len(attempt_files)} archived attempts,"
+                  f" keeping workspace for audit")
 
         self._run_hook("before_remove", workspace_path, task_id)
         shutil.rmtree(workspace_path)
@@ -362,11 +363,6 @@ class WorkspaceManager:
         if not external_files:
             return
 
-        sandbox_cfg = {}
-        if config:
-            sandbox_cfg = getattr(config, "sandbox", {})
-
-        backup_orig = sandbox_cfg.get("backup_orig", True)
         audit_records = []
 
         for item in external_files:

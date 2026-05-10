@@ -14,7 +14,8 @@ EXAMPLES/opencode_centric/scripts/run_orchestrator.py
   SILLACK_WEB_URL   — sillack-web 通知端点
   SYMPHONY_CONFIG   — config.yaml 路径（默认：configs/config.yaml）
 """
-import sys, os
+import os
+import sys
 
 # 把 FRAMEWORK 目录加入 import path
 FRAMEWORK_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "FRAMEWORK")
@@ -24,8 +25,8 @@ sys.path.insert(0, os.path.abspath(FRAMEWORK_DIR))
 EXAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, os.path.abspath(EXAMPLE_DIR))
 
-from symphony_core import SymphonyOrchestrator
 from config_loader import load_config
+from symphony_core import SymphonyOrchestrator
 
 
 def main():

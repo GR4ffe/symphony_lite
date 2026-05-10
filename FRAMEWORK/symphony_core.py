@@ -10,27 +10,27 @@ FRAMEWORK/symphony_core.py
 - 重试队列
 - 重启恢复
 """
-import os
+import atexit
 import fcntl
+import os
 import shutil
 import socket
 import sys
 import threading
 import time
-import atexit
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from config_loader import Config
-    from tasks_db import Task, TasksDB
-    from workspace_mgr import Workspace, WorkspaceManager
     from agent_types import AgentResult, Session
+    from config_loader import Config
+    from file_watcher import FileWatcher
     from memory_manager import MemoryManager
     from notifier import Notifier
-    from file_watcher import FileWatcher
+    from tasks_db import Task, TasksDB
+    from workspace_mgr import Workspace, WorkspaceManager
 
 try:
     from .logger import init_logger, log
@@ -80,7 +80,7 @@ class SymphonyOrchestrator:
     def __init__(self, config: "Config"):
         self.config = config
         self.workspace_mgr: "WorkspaceManager | None" = None
-        self.agent_adapter: "OpenCodeAgent | None" = None
+        self.agent_adapter = None  # 由 start() 中 AgentAdapter 子类赋值
         self.tasks_db: "TasksDB | None" = None
         self.memory_mgr: "MemoryManager | None" = None
         self.notifier: "Notifier | None" = None
@@ -157,12 +157,11 @@ class SymphonyOrchestrator:
         )
 
         # 延迟导入子组件(避免循环依赖)
-        from .tasks_db import TasksDB
-        from .workspace_mgr import WorkspaceManager
-        from .agent_types import AgentAdapter
+        from .file_watcher import FileWatcher
         from .memory_manager import MemoryManager
         from .notifier import Notifier
-        from .file_watcher import FileWatcher
+        from .tasks_db import TasksDB
+        from .workspace_mgr import WorkspaceManager
 
         self.tasks_db = TasksDB(self.config.tracker.tasks_file)
         self.workspace_mgr = WorkspaceManager(self.config)
@@ -268,7 +267,8 @@ class SymphonyOrchestrator:
                     new_attempt = task.attempt_count  # FIX: 不递增——_dispatch 会做 +1，避免双倍增
                     log.warning(
                         event="reset_dead_pid",
-                        detail=f"[Startup] {task.id} pid={task.lock_pid} is dead, resetting to Todo (attempt {task.attempt_count} -> {new_attempt})",
+                        detail=f"[Startup] {task.id} pid={task.lock_pid} dead, "
+                               f"resetting to Todo (attempt {task.attempt_count} -> {new_attempt})",
                         task_id=task.id,
                     )
                     self.tasks_db.update_task(task.id, {
@@ -316,7 +316,8 @@ class SymphonyOrchestrator:
 
         log.info(
             event="reconciliation_done",
-            detail=f"[Startup] Reconciliation done: {len(self.running)} recovered, {len(self.claimed)} claimed, {len(self.retry_attempts)} retry pending",
+            detail=f"[Startup] Reconciliation done: {len(self.running)} running, "
+                   f"{len(self.claimed)} claimed, {len(self.retry_attempts)} retry",
         )
 
     # ── 主循环 ─────────────────────────────────────────────────────────────
@@ -508,7 +509,8 @@ class SymphonyOrchestrator:
 
         # ── 防护2: 已在 claimed 集合中的任务不再重复派发 ──────────────
         if task.id in self.claimed:
-            log.info(event="already_claimed_skip", task_id=task.id, detail="Task already in claimed set, skipping duplicate dispatch")
+            log.info(event="already_claimed_skip", task_id=task.id,
+                     detail="Task in claimed set, skipping duplicate dispatch")
             return
 
         # ── FIX-003: 黑名单检查，防止被放弃的任务被重新调度 ─────────────
@@ -543,7 +545,8 @@ class SymphonyOrchestrator:
             self.claimed.discard(task.id)
             return
         except Exception as e:
-            log.error(event="workspace_prepare_failed", detail=f"Workspace prepare failed for {task.id}: {e}", task_id=task.id)
+            log.error(event="workspace_prepare_failed",
+                     detail=f"Workspace prepare failed for {task.id}: {e}", task_id=task.id)
             self.tasks_db.update_task(task.id, {
                 "state": "Todo",
                 "acquired_at": None,
@@ -717,7 +720,8 @@ class SymphonyOrchestrator:
                 # exit 非零但文件存在——file-check 降级为成功
                 log.warning(
                     event="task_success_via_file_check",
-                    detail=f"{task.id} had substantive output files despite exit {result.exit_code}, treating as success",
+                    detail=f"{task.id} had output files despite exit "
+                           f"{result.exit_code}, treating as success",
                     task_id=task.id,
                 )
                 self.tasks_db.update_task(task.id, {
@@ -830,7 +834,8 @@ class SymphonyOrchestrator:
                     try:
                         self._terminate(task_id, cleanup=True)
                     except Exception as e:
-                        log.error(event="terminate_failed", detail=f"Terminate failed for {task_id}: {e}", task_id=task_id)
+                        log.error(event="terminate_failed",
+                                 detail=f"Terminate failed for {task_id}: {e}", task_id=task_id)
                     self._schedule_retry_from_entry(entry, error=f"process died (pid {entry.session.pid})")
                     to_remove.append(task_id)
 
@@ -907,7 +912,6 @@ class SymphonyOrchestrator:
         max_age_hours = cleanup_config.get('max_age_hours', 24)
         cutoff_ts = time.time() - max_age_hours * 3600
 
-        workspace_root = self.config.workspace.root
         all_tasks = self.tasks_db.load_all_tasks()
         done_tasks = [t for t in all_tasks
                       if t.state in self.config.tracker.terminal_states]
@@ -946,7 +950,8 @@ class SymphonyOrchestrator:
     def _schedule_retry(self, task: "Task", attempt: int, error: str) -> None:
         """指数退避重试（I5：退避时间持久化到 tasks.json，重启后可恢复）"""
         if attempt > 10:
-            log.error(event="max_retry_giveup", detail=f"Max retries exceeded for {task.id}, giving up", task_id=task.id)
+            log.error(event="max_retry_giveup",
+                     detail=f"Max retries exceeded for {task.id}, giving up", task_id=task.id)
             self.claimed.discard(task.id)
             # FIX-003：从 retry_attempts 内存队列中删除，并写黑名单持久化
             self.retry_attempts.pop(task.id, None)
@@ -1050,7 +1055,8 @@ class SymphonyOrchestrator:
         new_attempt = task_obj.attempt_count + 1
         log.info(
             event="task_revision",
-            detail=f"GRaffe requested revision for {task.id} (attempt {task_obj.attempt_count} -> {new_attempt}): {error}",
+            detail=f"Revision requested for {task.id} "
+                   f"(attempt {task_obj.attempt_count} -> {new_attempt}): {error}",
             task_id=task.id,
         )
 
@@ -1135,7 +1141,8 @@ class SymphonyOrchestrator:
             })
             self.workspace_mgr.cleanup(task.id)
             self._pending_review_ack.discard(task.id)
-            log.info(event="auto_approved", detail=f"{task.id} auto-approved (score={score_result.total_score})", task_id=task.id)
+            log.info(event="auto_approved",
+                     detail=f"{task.id} auto-approved (score={score_result.total_score})", task_id=task.id)
         else:
             # 自动 revise → 重置为 Todo
             new_attempt = task.attempt_count + 1
@@ -1171,13 +1178,22 @@ class SymphonyOrchestrator:
 
         # 异步 POST 到 sillack-web，立即触发 SSE 广播（不阻塞 FileWatcher）
         try:
-            import threading, urllib.request, json as _json
+            import json as _json
+            import threading
+            import urllib.request
 
             def _do_webhook():
                 try:
                     url = f"{getattr(self.config, 'sillack_web_url', None) or 'http://localhost:8001'}/api/symphony/webhook"
-                    body = _json.dumps({"event": "tasks_json_changed", "detail": "file watcher triggered"}).encode("utf-8")
-                    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+                    body = _json.dumps(
+                        {"event": "tasks_json_changed",
+                         "detail": "file watcher triggered"}
+                    ).encode("utf-8")
+                    req = urllib.request.Request(
+                        url, data=body,
+                        headers={"Content-Type": "application/json"},
+                        method="POST"
+                    )
                     with urllib.request.urlopen(req, timeout=5):
                         pass
                 except Exception:

@@ -11,8 +11,14 @@ Sends SIGTERM after IDLE_TIMEOUT seconds of inactivity to force exit.
 - opencode 退出时（break 后）立即写 result.json + DONE marker，不依赖 finally。
 - finally 只做资源清理（close fd），不做 waitpid（WNOHANG 在循环中已处理）。
 """
-import os, sys, time, select, pty, tty, termios, fcntl, signal, errno
+import errno
 import json as _json
+import os
+import pty
+import select
+import signal
+import termios
+import time
 
 TASK_ID = os.environ.get("TASK_ID", "")
 PROMPT_FILE = os.environ.get("PROMPT_FILE", "")
@@ -184,7 +190,7 @@ def main():
 
                             if b"Permission required" in data or (b"Allow" in data and b"Reject" in data):
                                 if not permission_active:
-                                    print(f"[wrapper] Permission prompt detected, selecting 'Allow always'", flush=True)
+                                    print("[wrapper] Permission prompt detected, selecting 'Allow always'", flush=True)
                                     permission_active = True
                                     send_key(master_fd, b"\x1b[B")
                                     time.sleep(0.1)

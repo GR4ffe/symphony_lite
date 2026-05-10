@@ -104,9 +104,9 @@ class OpenCodeAgent:
         - opencode 的 TUI 权限对话框：Allow once / Allow always / Reject
         - 检测到 "Permission required" 或 "Allow" 关键词时，发送 ↓+Enter 选择 "Allow always"
         """
-        import textwrap
         # 解析 pty_wrapper_script 为绝对路径（相对于 agent_adapter.py 所在目录）
         import pathlib
+        import textwrap
         adapter_dir = pathlib.Path(__file__).resolve().parent
         pty_wrapper = str((adapter_dir / self.config.agent.opencode.pty_wrapper_script).resolve())
         return textwrap.dedent(f'''\

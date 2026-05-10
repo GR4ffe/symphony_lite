@@ -8,9 +8,6 @@ FRAMEWORK/config_loader.py
 import os
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
-
 
 try:
     import yaml
@@ -171,7 +168,10 @@ class Config:
         opencode = OpenCodeConfig(
             command=opencode_raw.get("command", "opencode --agent"),
             max_turns=opencode_raw.get("max_turns", 20),
-            pty_wrapper_script=opencode_raw.get("pty_wrapper_script", "../../EXAMPLES/opencode_centric/opencode_pty_wrapper.py"),
+            pty_wrapper_script=opencode_raw.get(
+                "pty_wrapper_script",
+                "../../EXAMPLES/opencode_centric/opencode_pty_wrapper.py"
+            ),
         )
         agent = AgentConfig(
             executor=agent_raw.get("executor", "opencode"),
@@ -239,7 +239,6 @@ class Config:
 
     def get_workspace_path(self, task_id: str) -> str:
         """返回 task_id 对应的绝对工作区路径"""
-        import re
         # 清理非法字符
         safe = re.sub(r"[^A-Za-z0-9._-]", "_", task_id)
         safe = re.sub(r"_+", "_", safe).strip("_-") or "task"

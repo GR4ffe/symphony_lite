@@ -65,7 +65,8 @@ class FileWatcher:
     def _use_inotify(self) -> bool:
         """检测 inotify 是否可用（Linux with inotify_init）"""
         try:
-            import ctypes, ctypes.util
+            import ctypes
+            import ctypes.util
             libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
             return hasattr(libc, "inotify_init")
         except Exception:

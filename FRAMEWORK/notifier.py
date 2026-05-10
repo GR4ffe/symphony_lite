@@ -11,7 +11,7 @@ import os
 import time
 from datetime import datetime, timezone
 from threading import Thread
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from config_loader import Config
@@ -118,15 +118,7 @@ class Notifier:
 
     def notify_task_retrying(self, task: "Task", attempt: int, error: str) -> None:
         """通知 GRaffe：任务失败，正在重试"""
-        payload = {
-            "type": "symphony_task_notification",
-            "event": "retrying",
-            "task_id": task.id,
-            "title": task.title,
-            "attempt": attempt,
-            "error": error,
-            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        }
+        self._notify(task, "retrying")
 
         # 重试不打扰 GRaffe，只写日志，不发通知
         print(f"[Notifier] TASK {task.id} retry #{attempt}: {error}")
