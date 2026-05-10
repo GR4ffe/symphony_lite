@@ -100,6 +100,17 @@ def integration_env(tmp_path):
     orch.workspace_mgr.prepare.return_value = MagicMock(
         path=str(data_dir / "workspace_root" / "TASK-INT-001")
     )
+    # 创建真实 workspace 目录，让 _on_agent_done 能检测到输出文件
+    ws_dir = data_dir / "workspace_root"
+    ws_dir.mkdir(parents=True, exist_ok=True)
+    # _on_agent_done 读取 entry.workspace.path 来检测输出文件
+    # 使用 mock 的 os.listdir 会让测试绕过真实文件系统
+    # 更好的方式：创建目录并写入输出文件
+    for task_path in [ws_dir / "TASK-INT-001", ws_dir / "TASK-FILE-001",
+                      ws_dir / "TASK-NO-DUP", ws_dir / "T-CAP-001"]:
+        task_path.mkdir(exist_ok=True)
+        (task_path / "_output.md").write_text("test output content")
+
     orch.memory_mgr.build_filtered_context.return_value = ""
 
     return {
