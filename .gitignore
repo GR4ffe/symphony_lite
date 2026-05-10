@@ -30,3 +30,10 @@ logs/
 
 # Local configs with secrets (if you add them)
 # config.local.yaml
+
+# Test & CI
+.pytest_cache/
+htmlcov/
+.coverage
+coverage-badge.json
+.state-*.json

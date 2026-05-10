@@ -1,5 +1,7 @@
 # Symphony-Lite
 
+[![CI](https://github.com/GR4ffe/symphony_lite/actions/workflows/test.yml/badge.svg)](https://github.com/GR4ffe/symphony_lite/actions/workflows/test.yml)
+
 > A lightweight, state-driven framework for orchestrating multiple AI coding agents in coordinated workflows.
 
 **轻量级、状态驱动的多 Agent 编排框架，适用于协调式 AI 工作流。**
