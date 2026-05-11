@@ -833,7 +833,7 @@ class SymphonyOrchestrator:
                         task_id=task_id,
                     )
                     try:
-                        self._terminate(task_id, cleanup=True)
+                        self._terminate(task_id, cleanup=False)
                     except Exception as e:
                         log.error(event="terminate_failed",
                                  detail=f"Terminate failed for {task_id}: {e}", task_id=task_id)
