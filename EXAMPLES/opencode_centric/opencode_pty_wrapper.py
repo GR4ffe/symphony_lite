@@ -102,10 +102,6 @@ def _write_result(exit_code_val: int, permission_confirmed: bool) -> None:
 
 
 def main():
-    # Read prompt
-    with open(PROMPT_FILE, 'r', encoding='utf-8') as f:
-        prompt_text = f.read()
-
     # Write initial heartbeat
     if HEARTBEAT:
         with open(HEARTBEAT, "w") as f:
