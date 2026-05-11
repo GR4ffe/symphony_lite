@@ -426,6 +426,7 @@ class SymphonyOrchestrator:
     _OUTPUT_SYSTEM_FILES = frozenset({
         "prompt.txt", "result.json", ".heartbeat", ".done",
         "opencode_wrapper.sh", "opencode.log",
+        ".dispatch.lock",
     })
 
     def _build_prompt(self, task: "Task") -> str:
@@ -685,7 +686,7 @@ class SymphonyOrchestrator:
                 if fname in self._OUTPUT_SYSTEM_FILES:
                     continue
                 fpath = os.path.join(ws_path, fname)
-                if os.path.isfile(fpath) and os.path.getsize(fpath) > 0:
+                if os.path.isfile(fpath) and os.path.getsize(fpath) > 100:
                     workspace_has_output = True
                     break
 

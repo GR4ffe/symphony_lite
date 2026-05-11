@@ -5,6 +5,12 @@ Detects permission prompts and automatically responds with "Allow always".
 Handles the opencode TUI permission dialog: Allow once / Allow always / Reject
 Sends SIGTERM after IDLE_TIMEOUT seconds of inactivity to force exit.
 
+已知限制（2026-05-11）：
+- PTY 使 opencode 检测到终端环境，渲染 TUI（ANSI 转义码）而非 headless 执行。
+- 对于文档生成/报告类任务，PTY 模式产生大量不可读的日志，且 agent 写完文件后不退出。
+- 如需 headless 执行，可考虑：移除 PTY 直接 pipe stdout，或改用 --no-tui 参数（视 opencode 版本支持情况）。
+- 权限自动响应功能仅在 PTY 模式下可用，权衡取舍。
+
 关键设计变更（fix: result.json-not-dependent-on-process-exit）：
 - 不再用 os.setsid() 创建新 session：opencode 留在同一进程组，killpg 能整组杀死，
   waitpid 不会因 session leader zombie 而永久挂起。
@@ -119,7 +125,7 @@ def main():
         os.dup2(slave_fd, 1)
         os.dup2(slave_fd, 2)
         os.close(slave_fd)
-        os.execvp("opencode", ["opencode", "--agent", "--prompt", prompt_text])
+        os.execvp("opencode", ["opencode", "--agent", "--prompt", PROMPT_FILE])
     else:
         # Parent
         global EXIT_CODE

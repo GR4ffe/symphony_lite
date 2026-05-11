@@ -103,6 +103,11 @@ class OpenCodeAgent:
         权限自动应答逻辑：
         - opencode 的 TUI 权限对话框：Allow once / Allow always / Reject
         - 检测到 "Permission required" 或 "Allow" 关键词时，发送 ↓+Enter 选择 "Allow always"
+
+        已知限制（2026-05-11）：
+        - PTY 模式使 opencode 渲染 TUI 而非 headless 执行，产生 ANSI 乱码日志。
+        - Agent 写完文件后不会自动退出，需依赖 IDLE_TIMEOUT 超时杀死进程。
+        - 如需 headless 执行文档/报告类任务，可移除 PTY 直接 pipe stdout。
         """
         # 解析 pty_wrapper_script 为绝对路径（相对于 agent_adapter.py 所在目录）
         import pathlib
